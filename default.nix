@@ -177,9 +177,6 @@ let overrideCabal = pkg: f: if pkg == null then null else lib.overrideCabal pkg 
     addReflexTraceEventsFlag = if enableTraceReflexEvents
       then drv: appendConfigureFlag drv "-fdebug-trace-events"
       else drv: drv;
-    addReflexOptimizerFlag = if useReflexOptimizer
-      then drv: appendConfigureFlag drv "-fuse-reflex-optimizer"
-      else drv: drv;
     addExposeAllUnfoldingsFlag = if enableExposeAllUnfoldings
       then drv: appendConfigureFlag drv "-fexpose-all-unfoldings"
       else drv: drv;
@@ -188,6 +185,9 @@ let overrideCabal = pkg: f: if pkg == null then null else lib.overrideCabal pkg 
         let reflexDom = import ./reflex-dom self;
             jsaddlePkgs = import ./jsaddle self;
             ghcjsDom = import ./ghcjs-dom self;
+            addReflexOptimizerFlag = if useReflexOptimizer && (self.ghc.cross or null) == null
+              then drv: appendConfigureFlag drv "-fuse-reflex-optimizer"
+              else drv: drv;
         in {
         ########################################################################
         # Reflex packages
@@ -289,11 +289,14 @@ let overrideCabal = pkg: f: if pkg == null then null else lib.overrideCabal pkg 
           '';
         });
         # https://github.com/ygale/timezone-series/pull/1
-        timezone-series = self.callPackage (cabal2nixResult sources.timezone-series) {};
+        timezone-series = doJailbreak (self.callPackage (cabal2nixResult sources.timezone-series) {});
         constraints = overrideCabal super.constraints (drv: {
           version = "0.9";
           sha256 = "17fjr30ig7v1g7w3bkhn1rnhdfqvq9y2g0xx3clqvlfdx9f17d5p";
         });
+        aeson-compat = doJailbreak super.aeson-compat;
+        x509 = dontHaddock super.x509;
+        x509-validation = dontHaddock super.x509-validation;
 
         # Jailbreaks
         ref-tf = doJailbreak super.ref-tf;
@@ -303,9 +306,22 @@ let overrideCabal = pkg: f: if pkg == null then null else lib.overrideCabal pkg 
         diagrams-contrib = doJailbreak super.diagrams-contrib;
         cases = doJailbreak super.cases; # The test suite's bounds on HTF are too strict
         async = doJailbreak super.async;
+        lifted-async = overrideCabal (doJailbreak super.lifted-async) (drv: {
+          preConfigure = (drv.preConfigure or "") + ''
+            sed -i 's/\( monad-control \)[0-9\.><= *&|]*/\1/' *.cabal
+            sed -i 's/\( constraints \)[0-9\.><= *&|]*/\1/' *.cabal
+          '';
+        });
         scientific = doJailbreak super.scientific;
         these = doJailbreak super.these;
         case-insensitive = doJailbreak super.case-insensitive;
+        uniplate = doJailbreak super.uniplate;
+        th-lift = overrideCabal (doJailbreak super.th-lift) (drv: {
+          preConfigure = ''
+            sed -i 's/^\( *template-haskell\) *.*$/\1/' th-lift.cabal
+          '';
+        });
+        timezone-olson = dontHaddock (doJailbreak super.timezone-olson);
 
         vector-algorithms = overrideCabal super.vector-algorithms (drv: {
           libraryHaskellDepends = drv.libraryHaskellDepends ++ [ self.mtl self.mwc-random ];
