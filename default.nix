@@ -148,8 +148,8 @@ let nixpkgs = nixpkgsFunc ({
       intero = nixpkgs.fetchFromGitHub {
         owner = "commercialhaskell";
         repo = "intero";
-        rev = "5378bb637c76c48eca64ccda0c855f7557aecb60";
-        sha256 = "1vgmbs790l8z90bk8sib3xvli06p1nkrjnnvlnhsjzkkpxynf2nf";
+        rev = "04265e68647bbf27772df7b71c9927d451e6256f";
+        sha256 = "0zax01dmrk1zbqw8j8css1w6qynbavfdjfgfxs34pb37gp4v8mgg";
       };
       timezone-series = nixpkgs.fetchFromGitHub {
         owner = "ryantrinkle";
